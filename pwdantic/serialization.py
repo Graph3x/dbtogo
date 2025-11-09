@@ -1,6 +1,7 @@
 from pwdantic.exceptions import INVALID_TYPES
 from typing import Any
 import pickle
+from pydantic import BaseModel
 
 
 class SQLColumn:
@@ -100,7 +101,6 @@ class GeneralSQLSerializer:
         primary: str = None,
         unique: list[str] = [],
     ) -> list[SQLColumn]:
-        print(classname)
 
         if "properties" in schema.keys():
             props = schema["properties"]
@@ -121,3 +121,27 @@ class GeneralSQLSerializer:
             cols.append(standard_col)
 
         return cols
+
+    def serialize_object(self, obj: BaseModel, no_bind: bool = False) -> dict[str, Any]:
+        table = obj.__class__.__name__
+        columns = self.serialize_schema(table, obj.model_json_schema())
+
+        obj_data = {}
+
+        for col in columns:
+            if col.datatype != "bytes":
+                obj_data[col.name] = obj.__dict__.get(col.name, None)
+                continue
+
+            raw_obj = obj.__dict__.get(col.name, None)
+            obj_data[col.name] = pickle.dumps(raw_obj)
+
+        if no_bind:
+            return obj_data
+        
+        return obj_data
+
+    def deserialize_object(
+        self, columns: list[SQLColumn], obj_data: str[Any]
+    ) -> BaseModel:
+        pass

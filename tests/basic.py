@@ -1,6 +1,7 @@
 from pwdantic.pwdantic import PWModel, PWEngineFactory
 from pwdantic.serialization import GeneralSQLSerializer
 import datetime
+import sqlite3
 
 
 def exp():
@@ -120,9 +121,6 @@ def main():
             super().bind(engine, primary_key="id", unique=["name"])
 
     Duck.bind(engine)
-
-    mc_duck = Duck(name="McDuck", color="Yellow", age=42)
-    mc_duck.save()
 
     print(Duck.get(name="McDuck"))
 

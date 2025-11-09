@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 import abc
 import sqlite3
+from typing import Any
 
 from pwdantic.exceptions import NO_BIND
 from pwdantic.sqlite import SqliteEngine
@@ -23,7 +24,7 @@ def binded(func):
         if "db" not in dir(cls):
             raise NO_BIND
 
-        func(cls, *args, **kwargs)
+        return func(cls, *args, **kwargs)
 
     return wrapper
 
@@ -52,17 +53,15 @@ class PWModel(BaseModel):
 
     @classmethod
     @binded
-    def get(cls, **kwargs):
-        data = cls.db.select("*", cls.__name__, kwargs)
+    def get(cls, **kwargs) -> list[Any]:
+        data = cls.db.select("*", cls.__name__)
         return data  # TODO -> object bound to db row
+    
+    def __init__(self):
+        self.obj_bind = None
 
     @binded
     def save(self):
-        schema = self.model_json_schema()
-        table = schema["title"]
-        obj_data = {}
-
-        for property in schema["properties"].keys():
-            obj_data[property] = self.__dict__.get(property, None)
-
+        table = self.__class__.__name__
+        obj_data = GeneralSQLSerializer().serialize_object(self)
         self.db.insert(table, obj_data)

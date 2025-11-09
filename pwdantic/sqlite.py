@@ -13,6 +13,9 @@ class SqliteEngine(PWEngine):
     def __del__(self):
         self.conn.close()
 
+    def _represent_bytes(self, data: bytes) -> str:
+        return f"X'{data.hex().upper()}'"
+
     def select(
         self, field: str, table: str, conditions: dict[str, Any] | None = None
     ) -> list[Any]:
@@ -38,11 +41,6 @@ class SqliteEngine(PWEngine):
         val_str = ", ".join(["?"] * len(vals))
 
         query = f"INSERT INTO {table} ({col_str}) VALUES({val_str})"
-
-        print(query)
-        print(vals)
-
-        return
 
         self.cursor.execute(query, tuple(vals))
         self.conn.commit()
@@ -79,13 +77,15 @@ class SqliteEngine(PWEngine):
                 if column.datatype != "bytes":
                     lite_col += f" DEFAULT {column.default}"
                 else:
-                    lite_col += f" DEFAULT X'{column.default.hex().upper()}'"
+                    lite_col += f" DEFAULT {self._represent_bytes(column.default)}"
 
             sqlite_cols.append(lite_col)
 
         self.cursor.execute(
             f"CREATE TABLE IF NOT EXISTS {classname} ({','.join(sqlite_cols)})"
         )
+
+        self.conn.commit()
 
     def _migrate_from(self):
         pass  # TODO
