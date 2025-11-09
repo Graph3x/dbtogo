@@ -1,7 +1,7 @@
-from pwdantic.pwdantic import PWEngine
 import sqlite3
 from typing import Any
 from pwdantic.exceptions import INVALID_TYPES
+from pwdantic.interfaces import PWEngine
 
 DEFAULT_PRIM_KEYS = ["id", "primary_key", "uuid"]
 
