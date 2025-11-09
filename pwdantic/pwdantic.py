@@ -85,7 +85,9 @@ class SqliteEngine(PWEngine):
             col = f"{col_name} {str_type} {modifier}"
             cols.append(col)
 
-        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS {table} ({','.join(cols)})")
+        self.cursor.execute(
+            f"CREATE TABLE IF NOT EXISTS {table} ({','.join(cols)})"
+        )
 
     def _migrate_from(self, schema: str):
         pass
