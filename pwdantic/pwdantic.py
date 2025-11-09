@@ -8,7 +8,12 @@ from pwdantic.exceptions import NO_BIND, INVALID_TYPES
 
 class PWEngine(abc.ABC):
 
-    def select(self, field: str, table: str, where: str):
+    def select(
+        self, field: str, table: str, conditions: dict[str, Any] | None = None
+    ) -> list[Any]:
+        pass
+
+    def insert(self, table: str, data: list[tuple]):
         pass
 
     def migrate(self, schema: dict[str, Any]):
@@ -25,12 +30,32 @@ class SqliteEngine(PWEngine):
         self.conn.close()
 
     def select(
-        self, field: str, table: str, condition: str, value: str
+        self, field: str, table: str, conditions: dict[str, Any] | None = None
     ) -> list[Any]:
-        self.cursor.execute(
-            f"SELECT {field} FROM {table} WHERE {condition} = ?", (value,)
-        )
+
+        if conditions is None:
+            query = f"SELECT {field} FROM {table}"
+            self.cursor.execute(query)
+
+        else:
+            where_clause = " AND ".join(
+                f"{key} = ?" for key in conditions.keys()
+            )
+            query = f"SELECT {field} FROM {table} WHERE {where_clause}"
+            self.cursor.execute(query, tuple(conditions.values()))
+
         return self.cursor.fetchall()
+
+    def insert(self, table: str, obj_data: dict[str, Any]):
+        cols = [col for col, val in obj_data.items() if val != None]
+        vals = [val for val in obj_data.values() if val != None]
+
+        col_str = ', '.join(cols)
+        val_str = ', '.join(["?"] * len(vals))
+        query = f"INSERT INTO {table} ({col_str}) VALUES({val_str})"
+
+        self.cursor.execute(query, tuple(vals))
+        self.conn.commit()
 
     def _transfer_type(self, str_type: str) -> str:
         types = {
@@ -73,14 +98,14 @@ class SqliteEngine(PWEngine):
         cols = []
 
         if "id" not in schema["properties"].keys():
-            cols.append("id INTEGER PRIMARY KEY")
+            cols.append("id INTEGER PRIMARY KEY AUTOINCREMENT")
 
         for col_name, column in schema["properties"].items():
 
             str_type, modifier = self._get_types(column)
 
             if col_name == "id":
-                modifier = "PRIMARY KEY"
+                modifier = "PRIMARY KEY AUTOINCREMENT"
 
             col = f"{col_name} {str_type} {modifier}"
             cols.append(col)
@@ -132,13 +157,24 @@ class PWModel(BaseModel):
     @classmethod
     @binded
     def get(cls, **kwargs):
-        data = cls.db.select("*", cls.__name__, "name", "*")
-        print(data)
+        data = cls.db.select("*", cls.__name__, kwargs)
+        print(data)  # TODO -> object
+        return None
+
+    @binded
+    def save(self):
+        schema = self.model_json_schema()
+        
+        table = schema["title"]
+
+        obj_data = {}
+
+        for property in schema["properties"].keys():
+            obj_data[property] = self.__dict__.get(property, None)
+
+        self.db.insert(table, obj_data)
 
     @classmethod
     @binded
     def select(cls, field: str = "*"):
-        if "db" not in dir(cls):
-            raise NO_BIND
-
-        return cls.db.select(field, cls.__name__, "1=1")
+        pass

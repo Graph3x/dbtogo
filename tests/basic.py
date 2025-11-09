@@ -3,12 +3,15 @@ from pwdantic.pwdantic import PWModel, PWEngineFactory
 engine = PWEngineFactory.create_sqlite3_engine("test.db")
 
 
-class Hero(PWModel):
-    id: int
+class Duck(PWModel):
+    id: int | None = None
     name: str
-    secret_name: str
+    color: str
     age: int | None = None
 
 
-Hero.bind(engine)
-Hero.get(name="asdf")
+Duck.bind(engine)
+Duck.get(name="McDuck")
+
+mc_duck = Duck(name="McDuck", color="Yellow", age=42)
+mc_duck.save()
