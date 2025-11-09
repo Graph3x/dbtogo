@@ -2,16 +2,13 @@ import sqlite3
 from typing import Any
 
 from pwdantic.interfaces import PWEngine
-from pwdantic.serialization import GeneralSQLSerializer, SQLColumn
-
-DEFAULT_PRIM_KEYS = ["id", "primary_key", "uuid"]
+from pwdantic.serialization import SQLColumn
 
 
 class SqliteEngine(PWEngine):
     def __init__(self, conn: sqlite3.Connection):
         self.conn = conn
         self.cursor = conn.cursor()
-        self.gss = GeneralSQLSerializer()
 
     def __del__(self):
         self.conn.close()
@@ -39,7 +36,13 @@ class SqliteEngine(PWEngine):
 
         col_str = ", ".join(cols)
         val_str = ", ".join(["?"] * len(vals))
+
         query = f"INSERT INTO {table} ({col_str}) VALUES({val_str})"
+
+        print(query)
+        print(vals)
+
+        return
 
         self.cursor.execute(query, tuple(vals))
         self.conn.commit()
@@ -56,25 +59,7 @@ class SqliteEngine(PWEngine):
 
         return types[str_type]
 
-    def _create_new(
-        self,
-        classname: str,
-        schema: str,
-        primary_key: str | None,
-        unique: list[str],
-    ):
-        standard_cols = self.gss.serialize_schema(
-            classname, schema, primary_key, unique
-        )
-
-        if primary_key is None:
-            for prim in DEFAULT_PRIM_KEYS:
-                if prim in schema["properties"].keys():
-                    continue
-                standard_cols.append(
-                    SQLColumn(prim, int, False, None, True, True)
-                )
-
+    def _create_new(self, classname: str, standard_cols: list[SQLColumn]):
         sqlite_cols = []
         for column in standard_cols:
             lite_col = f"{column.name} {self._transfer_type(column.datatype)}"
@@ -102,24 +87,17 @@ class SqliteEngine(PWEngine):
             f"CREATE TABLE IF NOT EXISTS {classname} ({','.join(sqlite_cols)})"
         )
 
-    def _migrate_from(self, schema: str):
+    def _migrate_from(self):
         pass  # TODO
 
-    def migrate(
-        self,
-        classname: str,
-        schema: dict[str, Any],
-        primary_key: str | None,
-        unique: list[str],
-    ):
-        table = schema["title"]
+    def migrate(self, table: str, columns: list[SQLColumn]):
 
         matched_tables = self.cursor.execute(
             f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}';"
         ).fetchall()
 
         if len(matched_tables) == 0:
-            return self._create_new(classname, schema, primary_key, unique)
+            return self._create_new(table, columns)
 
         else:
-            return self._migrate_from(schema)
+            return self._migrate_from()

@@ -6,6 +6,10 @@ from pwdantic.exceptions import NO_BIND
 from pwdantic.sqlite import SqliteEngine
 from pwdantic.interfaces import PWEngine
 
+from pwdantic.serialization import GeneralSQLSerializer, SQLColumn
+
+DEFAULT_PRIM_KEYS = ["id", "primary_key", "uuid"]
+
 
 class PWEngineFactory(abc.ABC):
     @classmethod
@@ -33,7 +37,18 @@ class PWModel(BaseModel):
         unique: list[str] = [],
     ):
         cls.db = db
-        db.migrate(cls.__name__, cls.model_json_schema(), primary_key, unique)
+
+        columns = GeneralSQLSerializer().serialize_schema(
+            cls.__name__, cls.model_json_schema(), primary_key, unique
+        )
+
+        if primary_key is None:
+            for prim in DEFAULT_PRIM_KEYS:
+                if prim in [x.name for x in columns]:
+                    continue
+                columns.append(SQLColumn(prim, int, False, None, True, True))
+
+        db.migrate(cls.__name__, columns)
 
     @classmethod
     @binded
