@@ -50,8 +50,8 @@ class SqliteEngine(PWEngine):
         cols = [col for col, val in obj_data.items() if val != None]
         vals = [val for val in obj_data.values() if val != None]
 
-        col_str = ', '.join(cols)
-        val_str = ', '.join(["?"] * len(vals))
+        col_str = ", ".join(cols)
+        val_str = ", ".join(["?"] * len(vals))
         query = f"INSERT INTO {table} ({col_str}) VALUES({val_str})"
 
         self.cursor.execute(query, tuple(vals))
@@ -164,9 +164,7 @@ class PWModel(BaseModel):
     @binded
     def save(self):
         schema = self.model_json_schema()
-        
         table = schema["title"]
-
         obj_data = {}
 
         for property in schema["properties"].keys():
