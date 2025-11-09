@@ -60,8 +60,7 @@ class PWModel(BaseModel):
         if len(data) < 1:
             return None
         return GeneralSQLSerializer().deserialize_object(cls, data[0])
-    
-    
+
     @bound
     def save(self):
         table = self.__class__.__name__

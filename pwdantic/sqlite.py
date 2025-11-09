@@ -77,7 +77,9 @@ class SqliteEngine(PWEngine):
                 if column.datatype != "bytes":
                     lite_col += f" DEFAULT {column.default}"
                 else:
-                    lite_col += f" DEFAULT {self._represent_bytes(column.default)}"
+                    lite_col += (
+                        f" DEFAULT {self._represent_bytes(column.default)}"
+                    )
 
             sqlite_cols.append(lite_col)
 
