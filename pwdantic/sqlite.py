@@ -119,3 +119,8 @@ class SqliteEngine(PWEngine):
 
         self.cursor.execute(query, tuple(vals))
         self.conn.commit()
+
+    def delete(self, table: str, key: str, value: Any):
+        query = f"DELETE FROM {table} WHERE {key} = ?"
+        self.cursor.execute(query, (value,))
+        self.conn.commit()

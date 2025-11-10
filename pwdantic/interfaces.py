@@ -14,3 +14,9 @@ class PWEngine(abc.ABC):
 
     def migrate(self, schema: dict[str, Any]):
         pass
+
+    def update(self, table: str, obj_data: dict[str, Any], primary_key: str):
+        pass
+
+    def delete(self, table: str, key: str, value: Any):
+        pass

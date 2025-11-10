@@ -22,20 +22,17 @@ def main():
 
     Duck.bind(engine)
 
-    mc_duck_junior = Duck.get(name="Junior")
+    mc_duck_junior = Duck(
+        name="Junior",
+        age=15,
+        shopping_list=["junior", "rohlik", "gothaj"],
+    )
+    mc_duck_junior.save()
 
-    if mc_duck_junior is None:
-        mc_duck_junior = Duck(
-            name="Junior",
-            age=15,
-            shopping_list=["junior", "rohlik", "gothaj"],
-        )
-        mc_duck_junior.save()
-
-        mc_duck = Duck(
-            name="McDuck", color="Yellow", age=45, children=[mc_duck_junior]
-        )
-        mc_duck.save()
+    mc_duck = Duck(
+        name="McDuck", color="Yellow", age=45, children=[mc_duck_junior]
+    )
+    mc_duck.save()
 
     mc_duck = Duck.get(name="McDuck")
     mc_duck.children[0].quack()
@@ -45,6 +42,10 @@ def main():
 
     mc_duck = Duck.get(duck_id=mc_duck.duck_id)
     print(mc_duck.name)
+
+    mc_duck.delete()
+    mc_duck_junior.delete()
+
 
 if __name__ == "__main__":
     main()

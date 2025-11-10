@@ -12,4 +12,11 @@ class PWInvalidTypeError(Exception):
 
 class PWBindViolationError(Exception):
     def __init__(self):
-        super().__init__("You cannot change the primary key of a bound object")
+        super().__init__(
+            "You cannot change the primary key of a bound object"
+        )
+
+
+class PWUnboundDeleteError(Exception):
+    def __init__(self):
+        super().__init__("You cannot delete an object that is not in the db")

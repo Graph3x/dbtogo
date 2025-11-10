@@ -3,7 +3,7 @@ import abc
 import sqlite3
 from typing import Any, Self
 
-from pwdantic.exceptions import PWNoBindError, PWBindViolationError
+from pwdantic.exceptions import *
 from pwdantic.sqlite import SqliteEngine
 from pwdantic.interfaces import PWEngine
 
@@ -90,3 +90,15 @@ class PWModel(BaseModel):
         if getattr(self, "_data_bind", None) is None:
             return self._create()
         return self._update()
+
+    @bound
+    def delete(self):
+        if getattr(self, "_data_bind", None) is None:
+            raise PWUnboundDeleteError()
+
+        table = self.__class__.__name__
+        primary_key = self.__class__._primary
+        primary_value = self._data_bind
+
+        self.db.delete(table, primary_key, primary_value)
+        self._data_bind = None
