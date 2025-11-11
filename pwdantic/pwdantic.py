@@ -102,3 +102,20 @@ class PWModel(BaseModel):
 
         self.db.delete(table, primary_key, primary_value)
         self._data_bind = None
+
+    @classmethod
+    @bound
+    def all(cls) -> list[Self]:
+        data = cls.db.select("*", cls.__name__)
+
+        objects = []
+        for row in data:
+            object = GeneralSQLSerializer().deserialize_object(cls, row)
+            setattr(
+                object,
+                "_data_bind",
+                getattr(object, object.__class__._primary),
+            )
+            objects.append(object)
+
+        return objects

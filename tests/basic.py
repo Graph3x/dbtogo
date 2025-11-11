@@ -43,6 +43,8 @@ def main():
     mc_duck = Duck.get(duck_id=mc_duck.duck_id)
     print(mc_duck.name)
 
+    print([x.name for x in Duck.all()])
+
     mc_duck.delete()
     mc_duck_junior.delete()
 
