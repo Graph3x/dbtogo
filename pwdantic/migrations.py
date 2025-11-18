@@ -8,15 +8,13 @@ class MigrationEngine:
     def get_col_diff(
         self, old_col: SQLColumn, new_col: SQLColumn
     ) -> list[MigrationStep]:
+        print(old_col)
         steps = []
 
         if old_col.datatype != new_col.datatype:
             steps.append(
                 RetypeCol(new_col.name, old_col.datatype, new_col.datatype)
             )
-
-        if old_col.datatype == "string":
-            old_col.default = old_col.default.strip("'").strip('"')
 
         if old_col.default != new_col.default:
             steps.append(ChangeDefault(new_col.name, new_col.default))

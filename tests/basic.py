@@ -5,6 +5,7 @@ class TestModel(PWModel):
     pk: int | None = None
     unq_string: str
     nullable_int: int | None = None
+    bytes_test: bytes | None = None
 
     @classmethod
     def bind(cls, engine):
@@ -27,11 +28,14 @@ def test_crud(engine: PWEngine):
     obj2 = TestModel(
         unq_string="OBJ2",
         nullable_int=5,
+        bytes_test=b'deadbeef'
     )
     obj2.save()
 
     obj1 = TestModel.get(unq_string="OBJ1")
     obj2 = TestModel.get(unq_string="OBJ2")
+
+    assert obj2.bytes_test == b'deadbeef'
 
     assert obj1.unq_string == "OBJ1"
     assert obj2.unq_string == "OBJ2"

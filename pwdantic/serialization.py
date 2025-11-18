@@ -6,71 +6,42 @@ from pwdantic.datatypes import SQLColumn
 
 
 class GeneralSQLSerializer:
+    def _get_col_type(self, col: dict[str, str]) -> str:
+        has_format = col["type"] == "string" and "format" in col.keys()
+        return col["format"] if has_format else col["type"]
 
     def _get_column_schema(self, name: str, column: dict) -> SQLColumn:
+        default = column.get("default", None)
+        nullable = False
+
         if "anyOf" in column.keys():
-            if len(column["anyOf"]) > 2:
+            types = column["anyOf"]
+
+            if len(types) > 2:
                 raise PWInvalidTypeError()
 
-            type1 = column["anyOf"][0]["type"]
-            type2 = column["anyOf"][1]["type"]
-
-            if type1 != "null" and type2 != "null":
+            if types[0]["type"] != "null" and types[1]["type"] != "null":
                 raise PWInvalidTypeError()
 
-            if type1 == "null" and type2 == "null":
+            if types[0]["type"] == "null" and types[1]["type"] == "null":
                 raise PWInvalidTypeError()
 
             nullable = True
+            column = types[0] if types[0]["type"] != "null" else types[1]
 
-            if type1 != "null":
-                str_type = (
-                    type1
-                    if (
-                        type1 != "string"
-                        or column["anyOf"][0].get("format", None) is None
-                    )
-                    else column["anyOf"][0]["format"]
-                )
-            else:
-                str_type = (
-                    type2
-                    if (
-                        type2 != "string"
-                        or column["anyOf"][1].get("format", None) is None
-                    )
-                    else column["anyOf"][1]["format"]
-                )
-
-        else:
-            str_type = column["type"]
-            str_type = (
-                str_type
-                if (
-                    str_type != "string" or column.get("format", None) is None
-                )
-                else column["format"]
-            )
-            nullable = False
-
-        default = column.get("default", None)
+        str_type = self._get_col_type(column)
 
         return SQLColumn(name, str_type, nullable, default)
 
     def _standardise_schema_col(self, col: SQLColumn) -> SQLColumn:
-        match col.datatype:
-            case "integer" | "string" | "number" | "boolean" | "date-time":
-                pass
+        basics = ["integer", "string", "number", "boolean", "date-time"]
+        if col.datatype in basics:
+            return col
+        
+        col.datatype = "bytes"
 
-            case "binary":
-                col.datatype = "bytes"
-                if col.default is not None:
-                    col.default = pickle.dumps(col.default.encode("utf-8"))
-
-            case _:
-                col.datatype = "bytes"
-                if col.default is not None:
-                    col.default = pickle.dumps(col.default)
+        if col.default is not None:
+            col.default = pickle.dumps(col.default)
 
         return col
 
@@ -108,7 +79,6 @@ class GeneralSQLSerializer:
     ) -> dict[str, Any]:
         table = obj.__class__.table
         columns = self.serialize_schema(table, obj.model_json_schema())
-
         obj_data = {}
 
         for col in columns:
@@ -118,9 +88,6 @@ class GeneralSQLSerializer:
 
             raw_obj = obj.__dict__.get(col.name, None)
             obj_data[col.name] = pickle.dumps(raw_obj)
-
-        if no_bind:
-            return obj_data
 
         return obj_data
 
@@ -132,10 +99,11 @@ class GeneralSQLSerializer:
         values = {}
 
         for i, col in enumerate(columns):
+            value = obj_data[i]
             if col.datatype == "bytes":
-                values[col.name] = pickle.loads(obj_data[i])
-            else:
-                values[col.name] = obj_data[i]
+                value = pickle.loads(value)
+
+            values[col.name] = value
 
         result = cls(**values)
         return result

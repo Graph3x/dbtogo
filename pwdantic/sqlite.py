@@ -140,6 +140,8 @@ class SqliteEngine(PWEngine):
                     nullable = True
                 case "DEFAULT":
                     default = column_data.pop(0)
+                    if column_type == "string":
+                        default = default.strip("'").strip('"')
                 case "PRIMARY" | "KEY" | "AUTOINCREMENT":
                     primary = True
                 case "UNIQUE":
