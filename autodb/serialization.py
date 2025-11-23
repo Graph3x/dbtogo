@@ -1,7 +1,16 @@
+from __future__ import annotations
+
 from typing import Any
 import pickle
-from pydantic import BaseModel
 from autodb.datatypes import SQLColumn
+
+from typing import TYPE_CHECKING
+from typing import TypeVar, Any
+
+T = TypeVar("T", bound="DBModel")
+
+if TYPE_CHECKING:
+    from autodb.dbmodel import DBModel
 
 
 class GeneralSQLSerializer:
@@ -74,7 +83,7 @@ class GeneralSQLSerializer:
         return cols
 
     def serialize_object(
-        self, obj: BaseModel, no_bind: bool = False
+        self, obj: DBModel, no_bind: bool = False
     ) -> dict[str, Any]:
         columns = self.serialize_schema(obj.__class__.__name__, obj.model_json_schema())
         obj_data = {}
@@ -90,8 +99,8 @@ class GeneralSQLSerializer:
         return obj_data
 
     def deserialize_object(
-        self, cls: type[BaseModel], obj_data: tuple[Any]
-    ) -> BaseModel:
+        self, cls: type[T], obj_data: tuple[Any]
+    ) -> T:
 
         columns = self.serialize_schema(cls.__name__, cls.model_json_schema())
         values = {}
