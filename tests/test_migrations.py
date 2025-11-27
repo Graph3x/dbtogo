@@ -1,5 +1,14 @@
-from dbtogo.dbmodel import DBModel, DBEngineFactory, DBEngine
-from dbtogo.datatypes import *
+from dbtogo.datatypes import (
+    AddCol,
+    AddConstraint,
+    Migration,
+    RemoveConstraint,
+    RenameCol,
+    SQLColumn,
+    SQLConstraint,
+    SQLType,
+)
+from dbtogo.dbmodel import DBEngineFactory, DBModel
 
 
 class MigrationTestModelOld(DBModel):
@@ -34,8 +43,8 @@ class MigrationTestModelNew(DBModel):
             table="migration_test",
         )
 
-
-def automatic_migration(engine: DBEngine):
+def test_automatic_migration():
+    engine = DBEngineFactory.create_sqlite3_engine("test.db")
     MigrationTestModelOld.bind(engine)
 
     a = MigrationTestModelOld(unq_string="hello", modify_me=8)
@@ -45,9 +54,11 @@ def automatic_migration(engine: DBEngine):
     b.save()
 
     MigrationTestModelNew.bind(engine)
+    engine._drop_table("migration_test")
 
 
-def manual_migration(engine: DBEngine):
+def test_manual_migration():
+    engine = DBEngineFactory.create_sqlite3_engine("test.db")
     MigrationTestModelOld.bind(engine)
 
     a = MigrationTestModelOld(unq_string="hello", modify_me=8)
@@ -70,13 +81,4 @@ def manual_migration(engine: DBEngine):
 
     a.delete()
     b.delete()
-
-
-def main():
-    engine = DBEngineFactory.create_sqlite3_engine("test.db")
     engine._drop_table("migration_test")
-    #manual_migration(engine)
-    automatic_migration(engine)
-
-if __name__ == "__main__":
-    main()

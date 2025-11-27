@@ -1,6 +1,6 @@
 import abc
-from typing import Any
 from enum import Enum
+from typing import Any
 
 from dbtogo.exceptions import NoBindError
 
@@ -38,7 +38,7 @@ class SQLColumn:
         self.unique: bool = unique
 
     def __str__(self):
-        return f"{self.name}: {("nullable " if self.nullable else "")}{("unique " if self.unique else "")}{("primary " if self.primary_key else "")}{self.datatype} ({self.default})"
+        return f"{self.name}: {('nullable ' if self.nullable else '')}{('unique ' if self.unique else '')}{('primary ' if self.primary_key else '')}{self.datatype} ({self.default})"
 
     def signature(self):
         return f"{self.datatype}{self.nullable}{self.default}{self.primary_key}{self.unique}"
@@ -46,10 +46,6 @@ class SQLColumn:
 
 class MigrationStep:
     _destructive: bool = False
-
-
-class DesctructiveMigrationStep(MigrationStep):
-    _destructive: bool = True
 
 
 class AddCol(MigrationStep):
@@ -60,9 +56,10 @@ class AddCol(MigrationStep):
         return f"ADD {self.column.name}"
 
 
-class DropCol(DesctructiveMigrationStep):
+class DropCol(MigrationStep):
     def __init__(self, column_name: str):
         self.column_name = column_name
+        self._destructive = True
 
     def __str__(self) -> str:
         return f"DROP {self.column_name}"
@@ -77,11 +74,12 @@ class RenameCol(MigrationStep):
         return f"RENAME {self.old_name} to {self.new_name}"
 
 
-class RetypeCol(DesctructiveMigrationStep):
+class RetypeCol(MigrationStep):
     def __init__(self, column_name: str, old_type: str, new_type: str):
         self.column_name = column_name
         self.old_type = old_type
         self.new_type = new_type
+        self._destructive = True
 
     def __str__(self) -> str:
         return f"RETYPE {self.column_name} from {self.old_type} to {self.new_type}"
@@ -155,7 +153,6 @@ class Migration:
 
 
 class DBEngine(abc.ABC):
-
     @abc.abstractmethod
     def select(
         self, field: str, table: str, conditions: dict[str, Any] | None = None
@@ -178,9 +175,10 @@ class DBEngine(abc.ABC):
     def delete(self, table: str, key: str, value: Any):
         pass
 
-    
+    @abc.abstractmethod
     def execute_migration(self, migration: Migration, force: bool = False):
         pass
+
 
 class UnboundEngine(DBEngine):
     def select(
@@ -200,7 +198,5 @@ class UnboundEngine(DBEngine):
     def delete(self, table: str, key: str, value: Any):
         raise NoBindError()
 
-    
     def execute_migration(self, migration: Migration, force: bool = False):
         raise NoBindError()
-

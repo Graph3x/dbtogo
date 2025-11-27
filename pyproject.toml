@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dbtogo"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="Filip Hejzlar", email="hejzlar.filip@seznam.cz" },
 ]
@@ -21,3 +21,29 @@ license-files = ["LICENSE"]
 [project.urls]
 Homepage = "https://github.com/Graph3x/dbtogo"
 Issues = "https://github.com/Graph3x/dbtogo/issues"
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "mypy",
+    "ruff",
+]
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --disable-warnings"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+pretty = true
+show_error_codes = true
+strict = true
+warn_unreachable = true
+warn_unused_configs = true
+
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+select = ["E", "F", "W", "I", "UP"]
+ignore = []

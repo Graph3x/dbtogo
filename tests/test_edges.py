@@ -1,4 +1,4 @@
-from dbtogo.dbmodel import DBModel, DBEngineFactory, DBEngine
+from dbtogo.dbmodel import DBEngineFactory, DBModel
 
 
 class TestModel(DBModel):
@@ -18,18 +18,15 @@ class TestModel(DBModel):
         )
 
 
-def test_edges(engine: DBEngine):
+def test_edges():
+    engine = DBEngineFactory.create_sqlite3_engine("test.db")
     TestModel.bind(engine)
 
     obj1 = TestModel(
         unq_string="OBJ1",
     )
 
-    obj2 = TestModel(
-        unq_string="OBJ2",
-        nullable_int=5,
-        bytes_test=b'deadbeef'
-    )
+    obj2 = TestModel(unq_string="OBJ2", nullable_int=5, bytes_test=b"deadbeef")
 
     obj1.children.append(obj1)
     obj1.save()
@@ -46,12 +43,3 @@ def test_edges(engine: DBEngine):
     obj2.delete()
 
     assert len(TestModel.all()) == 0
-
-
-def main():
-    engine = DBEngineFactory.create_sqlite3_engine("test.db")
-    test_edges(engine)
-
-
-if __name__ == "__main__":
-    main()

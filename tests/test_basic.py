@@ -1,4 +1,4 @@
-from dbtogo.dbmodel import DBModel, DBEngineFactory, DBEngine
+from dbtogo.dbmodel import DBEngineFactory, DBModel
 
 
 class TestModel(DBModel):
@@ -17,7 +17,8 @@ class TestModel(DBModel):
         )
 
 
-def test_crud(engine: DBEngine):
+def test_crud():
+    engine = DBEngineFactory.create_sqlite3_engine("test.db")
     TestModel.bind(engine)
 
     obj1 = TestModel(
@@ -25,23 +26,19 @@ def test_crud(engine: DBEngine):
     )
     obj1.save()
 
-    obj2 = TestModel(
-        unq_string="OBJ2",
-        nullable_int=5,
-        bytes_test=b'deadbeef'
-    )
+    obj2 = TestModel(unq_string="OBJ2", nullable_int=5, bytes_test=b"deadbeef")
     obj2.save()
 
     obj1 = TestModel.get(unq_string="OBJ1")
     obj2 = TestModel.get(unq_string="OBJ2")
 
-    assert obj2.bytes_test == b'deadbeef'
+    assert obj2.bytes_test == b"deadbeef"
 
     assert obj1.unq_string == "OBJ1"
     assert obj2.unq_string == "OBJ2"
 
-    assert obj1.pk != None
-    assert obj2.pk != None
+    assert obj1.pk is not None
+    assert obj2.pk is not None
 
     assert obj1.nullable_int is None
     assert obj2.nullable_int == 5
@@ -58,12 +55,3 @@ def test_crud(engine: DBEngine):
     obj2.delete()
 
     assert len(TestModel.all()) == 0
-
-
-def main():
-    engine = DBEngineFactory.create_sqlite3_engine("test.db")
-    test_crud(engine)
-
-
-if __name__ == "__main__":
-    main()
