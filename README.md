@@ -1,6 +1,10 @@
-[![CI](https://github.com/Graph3x/dbtogo/actions/workflows/ci.yaml/badge.svg)](https://github.com/username/repo/actions/workflows/ci.yaml)
-[![PyPI version](https://img.shields.io/pypi/v/my-package.svg)](https://pypi.org/project/dbtogo/)
-[![Python Version](https://img.shields.io/pypi/pyversions/my-package.svg)](https://pypi.org/project/my-dbtogo/)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Graph3x/dbtogo/ci.yml)
+
+
+![PyPI - Implementation](https://img.shields.io/pypi/implementation/dbtogo)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dbtogo)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/dbtogo)
+
 
 # DBTOGO
 
