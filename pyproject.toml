@@ -5,6 +5,9 @@ build-backend = "hatchling.build"
 [project]
 name = "dbtogo"
 version = "0.0.2"
+dependencies = [
+    "pydantic>=2.0",
+]
 authors = [
   { name="Filip Hejzlar", email="hejzlar.filip@seznam.cz" },
 ]
