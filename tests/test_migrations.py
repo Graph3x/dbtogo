@@ -43,6 +43,7 @@ class MigrationTestModelNew(DBModel):
             table="migration_test",
         )
 
+
 def test_automatic_migration():
     engine = DBEngineFactory.create_sqlite3_engine("test.db")
     MigrationTestModelOld.bind(engine)

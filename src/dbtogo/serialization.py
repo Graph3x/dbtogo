@@ -58,7 +58,6 @@ class GeneralSQLSerializer:
         primary: str | None = None,
         unique: list[str] = [],
     ) -> list[SQLColumn]:
-
         if "properties" in schema.keys():
             props = schema["properties"]
         else:
@@ -80,9 +79,7 @@ class GeneralSQLSerializer:
 
         return cols
 
-    def serialize_object(
-        self, obj: DBModel, no_bind: bool = False
-    ) -> dict[str, Any]:
+    def serialize_object(self, obj: DBModel, no_bind: bool = False) -> dict[str, Any]:
         columns = self.serialize_schema(obj.__class__.__name__, obj.model_json_schema())
         obj_data = {}
 
@@ -96,10 +93,7 @@ class GeneralSQLSerializer:
 
         return obj_data
 
-    def deserialize_object(
-        self, cls: type[T], obj_data: tuple[Any]
-    ) -> T:
-
+    def deserialize_object(self, cls: type[T], obj_data: tuple[Any]) -> T:
         columns = self.serialize_schema(cls.__name__, cls.model_json_schema())
         values = {}
 

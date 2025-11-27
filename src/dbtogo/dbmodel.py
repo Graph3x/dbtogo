@@ -56,7 +56,7 @@ class DBModel(BaseModel):
                 primary_key = prim
                 columns.append(SQLColumn(prim, "int", False, None, True, True))
 
-        assert(primary_key is not None)
+        assert primary_key is not None
 
         cls._primary = primary_key
         cls._table = table
@@ -97,9 +97,7 @@ class DBModel(BaseModel):
             raise BindViolationError()
 
         obj_data = GeneralSQLSerializer().serialize_object(self)
-        self._db.update(
-            self.__class__._table, obj_data, self.__class__._primary
-        )
+        self._db.update(self.__class__._table, obj_data, self.__class__._primary)
 
     @bound
     def save(self):

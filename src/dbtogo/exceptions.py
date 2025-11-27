@@ -1,15 +1,11 @@
 class NoBindError(Exception):
     def __init__(self):
-        super().__init__(
-            "You need to bind this model to a db before first use"
-        )
+        super().__init__("You need to bind this model to a db before first use")
 
 
 class BindViolationError(Exception):
     def __init__(self):
-        super().__init__(
-            "You cannot change the primary key of a bound object"
-        )
+        super().__init__("You cannot change the primary key of a bound object")
 
 
 class UnboundDeleteError(Exception):
@@ -27,8 +23,8 @@ class AutoMigrationError(Exception):
 class DestructiveMigrationError(Exception):
     def __init__(self):
         super().__init__(
-            "This migration includes destructive actions," /
-            "but wasnt executed with force=True"
+            "This migration includes destructive actions,"
+            / "but wasnt executed with force=True"
         )
 
 

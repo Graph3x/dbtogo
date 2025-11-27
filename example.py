@@ -29,9 +29,7 @@ def main():
     )
     mc_duck_junior.save()
 
-    mc_duck = Duck(
-        name="McDuck", color="Yellow", age=45, children=[mc_duck_junior]
-    )
+    mc_duck = Duck(name="McDuck", color="Yellow", age=45, children=[mc_duck_junior])
     mc_duck.save()
 
     mc_duck = Duck.get(name="McDuck")
