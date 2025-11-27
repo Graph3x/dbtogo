@@ -27,7 +27,8 @@ class AutoMigrationError(Exception):
 class DestructiveMigrationError(Exception):
     def __init__(self):
         super().__init__(
-            "This migration includes destructive actions, but wasnt executed with force=True"
+            "This migration includes destructive actions," /
+            "but wasnt executed with force=True"
         )
 
 

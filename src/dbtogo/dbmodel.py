@@ -1,18 +1,17 @@
-from pydantic import BaseModel
-import abc
 import sqlite3
 from typing import Self
 
-from dbtogo.exceptions import *
-from dbtogo.sqlite import SqliteEngine
-from dbtogo.datatypes import DBEngine, SQLColumn, UnboundEngine
+from pydantic import BaseModel
 
+from dbtogo.datatypes import DBEngine, SQLColumn, UnboundEngine
+from dbtogo.exceptions import BindViolationError, NoBindError, UnboundDeleteError
 from dbtogo.serialization import GeneralSQLSerializer
+from dbtogo.sqlite import SqliteEngine
 
 DEFAULT_PRIM_KEYS = ["id", "primary_key", "uuid"]
 
 
-class DBEngineFactory(abc.ABC):
+class DBEngineFactory:
     @staticmethod
     def create_sqlite3_engine(database: str = "") -> DBEngine:
         conn = sqlite3.connect(database)
@@ -56,21 +55,21 @@ class DBModel(BaseModel):
                     continue
                 primary_key = prim
                 columns.append(SQLColumn(prim, "int", False, None, True, True))
-                
+
         assert(primary_key is not None)
-        
+
         cls._primary = primary_key
         cls._table = table
         db.migrate(table, columns)
 
     @classmethod
     def _deserialize_object(cls, object_data: tuple) -> Self:
-        object = GeneralSQLSerializer().deserialize_object(cls, object_data)
+        py_object = GeneralSQLSerializer().deserialize_object(cls, object_data)
 
-        pk = getattr(object, object.__class__._primary)
-        setattr(object, "_data_bind", pk)
+        pk = getattr(py_object, py_object.__class__._primary)
+        py_object._data_bind = pk
 
-        return object
+        return py_object
 
     @classmethod
     @bound
@@ -88,8 +87,8 @@ class DBModel(BaseModel):
         insert_bind = self._db.insert(self.__class__._table, obj_data)
         bind_attr = getattr(self, self.__class__._primary)
 
-        data_bind = bind_attr if bind_attr != None else insert_bind
-        setattr(self, "_data_bind", data_bind)
+        data_bind = bind_attr if bind_attr is not None else insert_bind
+        self._data_bind = data_bind
 
     def _update(self):
         bind = self._data_bind

@@ -2,8 +2,8 @@ import sqlite3
 from typing import Any
 
 from dbtogo.datatypes import DBEngine, SQLColumn
-from dbtogo.migrations import MigrationEngine, Migration
 from dbtogo.exceptions import DestructiveMigrationError
+from dbtogo.migrations import Migration, MigrationEngine
 
 sqlite_column = tuple[int, str, str, int, Any, int]
 
@@ -26,23 +26,20 @@ class SqliteEngine(DBEngine):
     def select(
         self, field: str, table: str, conditions: dict[str, Any] | None = None
     ) -> list[Any]:
-
         if conditions is None:
             query = f"SELECT {field} FROM {table}"
             self.cursor.execute(query)
 
         else:
-            where_clause = " AND ".join(
-                f"{key} = ?" for key in conditions.keys()
-            )
+            where_clause = " AND ".join(f"{key} = ?" for key in conditions.keys())
             query = f"SELECT {field} FROM {table} WHERE {where_clause}"
             self.cursor.execute(query, tuple(conditions.values()))
 
         return self.cursor.fetchall()
 
     def insert(self, table: str, obj_data: dict[str, Any]) -> int | None:
-        cols = [col for col, val in obj_data.items() if val != None]
-        vals = [val for val in obj_data.values() if val != None]
+        cols = [col for col, val in obj_data.items() if val is not None]
+        vals = [val for val in obj_data.values() if val is not None]
 
         col_str = ", ".join(cols)
         val_str = ", ".join(["?"] * len(vals))
@@ -80,7 +77,9 @@ class SqliteEngine(DBEngine):
     def _create_table(self, tablename: str, standard_cols: list[SQLColumn]):
         sqlite_cols = []
         for column in standard_cols:
-            lite_col = f"{column.name} {self._transfer_type_from_standard(column.datatype)}"
+            lite_col = (
+                f"{column.name} {self._transfer_type_from_standard(column.datatype)}"
+            )
 
             if column.nullable and not column.primary_key:
                 lite_col += " NULLABLE"
@@ -95,13 +94,13 @@ class SqliteEngine(DBEngine):
 
             if column.default is not None:
                 if column.datatype == "string":
-                    lite_col += f" DEFAULT '{column.default.replace("'", "").replace('"', '')}'"
+                    lite_col += (
+                        f" DEFAULT '{column.default.replace("'", '').replace('"', '')}'"
+                    )
                 elif column.datatype != "bytes":
                     lite_col += f" DEFAULT {column.default}"
                 else:
-                    lite_col += (
-                        f" DEFAULT {self._represent_bytes(column.default)}"
-                    )
+                    lite_col += f" DEFAULT {self._represent_bytes(column.default)}"
 
             sqlite_cols.append(lite_col)
 
@@ -147,13 +146,9 @@ class SqliteEngine(DBEngine):
                 case "UNIQUE":
                     unique = True
                 case _:
-                    raise SQLiteEngineError(
-                        "Failed parsing current DB schema"
-                    )
+                    raise SQLiteEngineError("Failed parsing current DB schema")
 
-        return SQLColumn(
-            column_name, column_type, nullable, default, primary, unique
-        )
+        return SQLColumn(column_name, column_type, nullable, default, primary, unique)
 
     def _get_SQLColumns(self, table: str) -> list[SQLColumn]:
         query = f"SELECT sql FROM sqlite_master WHERE type='table' AND name='{table}';"
@@ -174,7 +169,6 @@ class SqliteEngine(DBEngine):
         force: bool = False,
         _current_cols: list[SQLColumn] | None = None,
     ):
-
         me = MigrationEngine()
 
         if len(migration.steps) < 1:
@@ -243,8 +237,8 @@ class SqliteEngine(DBEngine):
             return self._migrate_from(table, columns)
 
     def update(self, table: str, obj_data: dict[str, Any], primary_key: str):
-        cols = [col for col, val in obj_data.items() if val != None]
-        vals = [val for val in obj_data.values() if val != None]
+        cols = [col for col, val in obj_data.items() if val is not None]
+        vals = [val for val in obj_data.values() if val is not None]
 
         set_string = ""
         for col in cols:

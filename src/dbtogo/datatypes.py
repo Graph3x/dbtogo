@@ -37,11 +37,18 @@ class SQLColumn:
         self.primary_key: bool = primary
         self.unique: bool = unique
 
-    def __str__(self):
-        return f"{self.name}: {('nullable ' if self.nullable else '')}{('unique ' if self.unique else '')}{('primary ' if self.primary_key else '')}{self.datatype} ({self.default})"
+    def __str__(self) -> str:
+        representation = f"{self.name}: "
+        representation += "nullable " if self.nullable else ""
+        representation += "unique " if self.unique else ""
+        representation += "primary " if self.primary_key else ""
+        representation += f"{self.datatype} ({self.default})"
+        return representation
 
-    def signature(self):
-        return f"{self.datatype}{self.nullable}{self.default}{self.primary_key}{self.unique}"
+    def signature(self) -> str:
+        str_signature = f"{self.datatype}{self.nullable}{self.default}"
+        str_signature += f"{self.primary_key}{self.unique}"
+        return str_signature
 
 
 class MigrationStep:
@@ -128,22 +135,22 @@ class Migration:
 
     @staticmethod
     def _step_key_function(step: MigrationStep):
-        if type(step) == AddCol:
+        if type(step) is AddCol:
             return 1
 
-        elif type(step) == RetypeCol:
+        elif type(step) is RetypeCol:
             return 3
 
-        elif type(step) == AddConstraint:
+        elif type(step) is AddConstraint:
             return 3
 
-        elif type(step) == RemoveConstraint:
+        elif type(step) is RemoveConstraint:
             return 3
 
-        elif type(step) == DropCol:
+        elif type(step) is DropCol:
             return 4
 
-        elif type(step) == RenameCol:
+        elif type(step) is RenameCol:
             return 5
 
         return 0

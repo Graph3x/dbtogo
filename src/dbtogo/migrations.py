@@ -1,7 +1,19 @@
-from dbtogo.serialization import SQLColumn
-from dbtogo.datatypes import *
 from copy import deepcopy
+
+from dbtogo.datatypes import (
+    AddCol,
+    AddConstraint,
+    ChangeDefault,
+    DropCol,
+    Migration,
+    MigrationStep,
+    RemoveConstraint,
+    RenameCol,
+    RetypeCol,
+    SQLConstraint,
+)
 from dbtogo.exceptions import InvalidMigrationError
+from dbtogo.serialization import SQLColumn
 
 
 class MigrationEngine:
@@ -22,9 +34,7 @@ class MigrationEngine:
         steps: list[MigrationStep] = []
 
         if old_col.datatype != new_col.datatype:
-            steps.append(
-                RetypeCol(new_col.name, old_col.datatype, new_col.datatype)
-            )
+            steps.append(RetypeCol(new_col.name, old_col.datatype, new_col.datatype))
 
         if old_col.default != new_col.default:
             steps.append(ChangeDefault(new_col.name, new_col.default))
@@ -39,7 +49,6 @@ class MigrationEngine:
     def generate_migration(
         self, table: str, original: list[SQLColumn], new: list[SQLColumn]
     ) -> Migration:
-
         steps = []
 
         current_names = [x.name for x in original]
@@ -78,28 +87,26 @@ class MigrationEngine:
     def get_renamed_mapping(self, migration: Migration):
         mapping = {}
         for step in migration.steps:
-            if type(step) == RenameCol:
+            if type(step) is RenameCol:
                 mapping[step.old_name] = step.new_name
         return mapping
 
-    def _execute_step(
-        self, new_cols: dict[str, SQLColumn], step: MigrationStep
-    ):
-        if type(step) == AddCol:
+    def _execute_step(self, new_cols: dict[str, SQLColumn], step: MigrationStep):
+        if type(step) is AddCol:
             new_cols[step.column.name] = step.column
 
-        elif type(step) == DropCol:
+        elif type(step) is DropCol:
             new_cols.pop(step.column_name)
 
-        elif type(step) == RenameCol:
+        elif type(step) is RenameCol:
             col = new_cols.pop(step.old_name)
             col.name = step.new_name
             new_cols[col.name] = col
 
-        elif type(step) == RetypeCol:
+        elif type(step) is RetypeCol:
             new_cols[step.column_name].datatype = step.new_type
 
-        elif type(step) == AddConstraint:
+        elif type(step) is AddConstraint:
             col = new_cols[step.column_name]
 
             if step.constraint == SQLConstraint.nullable.value:
@@ -111,7 +118,7 @@ class MigrationEngine:
             if step.constraint == SQLConstraint.primary.value:
                 col.primary_key = True
 
-        elif type(step) == RemoveConstraint:
+        elif type(step) is RemoveConstraint:
             col = new_cols[step.column_name]
 
             if step.constraint == SQLConstraint.nullable.value:
@@ -123,13 +130,12 @@ class MigrationEngine:
             if step.constraint == SQLConstraint.primary.value:
                 col.primary_key = False
 
-        elif type(step) == ChangeDefault:
+        elif type(step) is ChangeDefault:
             new_cols[step.column_name].default = step.new_default
 
     def get_migrated_cols(
         self, original: list[SQLColumn], migration: Migration
     ) -> list[SQLColumn]:
-
         new_cols = {}
         for col in original:
             new_cols[col.name] = deepcopy(col)
@@ -143,5 +149,5 @@ class MigrationEngine:
 
         if len([x for x in cols if x.primary_key]) != 1:
             raise InvalidMigrationError()
-        
+
         return cols

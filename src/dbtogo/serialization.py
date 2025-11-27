@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from typing import Any
 import pickle
-from dbtogo.datatypes import SQLColumn
+from typing import TYPE_CHECKING, Any, TypeVar
 
-from typing import TYPE_CHECKING
-from typing import TypeVar, Any
+from dbtogo.datatypes import SQLColumn
 
 T = TypeVar("T", bound="DBModel")
 
@@ -45,7 +43,7 @@ class GeneralSQLSerializer:
         basics = ["integer", "string", "number", "boolean", "date-time"]
         if col.datatype in basics:
             return col
-        
+
         col.datatype = "bytes"
 
         if col.default is not None:

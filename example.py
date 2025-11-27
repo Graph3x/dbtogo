@@ -1,4 +1,4 @@
-from dbtogo.dbmodel import DBModel, DBEngineFactory
+from dbtogo.dbmodel import DBEngineFactory, DBModel
 
 
 class Duck(DBModel):

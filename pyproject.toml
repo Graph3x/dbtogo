@@ -38,12 +38,18 @@ testpaths = ["tests"]
 python_version = "3.12"
 pretty = true
 show_error_codes = true
-strict = true
 warn_unreachable = true
 warn_unused_configs = true
+disallow_untyped_defs = true
+warn_unused_ignores = true
+strict_optional = true
+no_implicit_optional = true
 
 [tool.ruff]
-line-length = 79
+line-length = 89
 target-version = "py312"
-select = ["E", "F", "W", "I", "UP"]
-ignore = []
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "A"]
+ignore = ["B006"]
+
