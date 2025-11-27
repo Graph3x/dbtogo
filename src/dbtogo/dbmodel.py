@@ -1,5 +1,6 @@
 import sqlite3
-from typing import Self
+from collections.abc import Callable
+from typing import Any, Self
 
 from pydantic import BaseModel
 
@@ -18,8 +19,8 @@ class DBEngineFactory:
         return SqliteEngine(conn)
 
 
-def bound(func):
-    def wrapper(cls: "DBModel", *args, **kwargs):
+def bound(func: Callable) -> Callable:
+    def wrapper(cls: "DBModel", *args: tuple, **kwargs: dict[str, Any]) -> Any:
         if cls._db is None:
             raise NoBindError()
 
@@ -40,7 +41,7 @@ class DBModel(BaseModel):
         primary_key: str | None = None,
         unique: list[str] = [],
         table: str | None = None,
-    ):
+    ) -> None:
         cls._db = db
         table = table if table is not None else cls.__name__
 
@@ -73,7 +74,7 @@ class DBModel(BaseModel):
 
     @classmethod
     @bound
-    def get(cls, **kwargs) -> Self | None:
+    def get(cls, **kwargs: dict[str, Any]) -> Self | None:
         data = cls._db.select("*", cls._table, kwargs)
 
         if len(data) < 1:
@@ -81,7 +82,7 @@ class DBModel(BaseModel):
 
         return cls._deserialize_object(data[0])
 
-    def _create(self):
+    def _create(self) -> None:
         obj_data = GeneralSQLSerializer().serialize_object(self)
 
         insert_bind = self._db.insert(self.__class__._table, obj_data)
@@ -90,7 +91,7 @@ class DBModel(BaseModel):
         data_bind = bind_attr if bind_attr is not None else insert_bind
         self._data_bind = data_bind
 
-    def _update(self):
+    def _update(self) -> None:
         bind = self._data_bind
 
         if getattr(self, self.__class__._primary) != bind:
@@ -100,13 +101,13 @@ class DBModel(BaseModel):
         self._db.update(self.__class__._table, obj_data, self.__class__._primary)
 
     @bound
-    def save(self):
+    def save(self) -> None:
         if getattr(self, "_data_bind", None) is None:
             return self._create()
         return self._update()
 
     @bound
-    def delete(self):
+    def delete(self) -> None:
         if getattr(self, "_data_bind", None) is None:
             raise UnboundDeleteError()
 

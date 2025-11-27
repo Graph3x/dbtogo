@@ -97,7 +97,7 @@ class AddConstraint(MigrationStep):
         self.column_name = column_name
         self.constraint = constraint
 
-        if constraint == SQLConstraint.primary:
+        if constraint == SQLConstraint.primary.value:
             self._destructive = True
 
     def __str__(self) -> str:
@@ -109,7 +109,7 @@ class RemoveConstraint(MigrationStep):
         self.column_name = column_name
         self.constraint = constraint
 
-        if constraint == SQLConstraint.primary:
+        if constraint == SQLConstraint.primary.value:
             self._destructive = True
 
     def __str__(self) -> str:
@@ -130,11 +130,11 @@ class Migration:
         self.table = table
         self.steps = steps
 
-    def is_destructive(self):
+    def is_destructive(self) -> bool:
         return len([x for x in self.steps if x._destructive]) > 0
 
     @staticmethod
-    def _step_key_function(step: MigrationStep):
+    def _step_key_function(step: MigrationStep) -> int:
         if type(step) is AddCol:
             return 1
 
@@ -155,7 +155,7 @@ class Migration:
 
         return 0
 
-    def sort(self):
+    def sort(self) -> None:
         self.steps.sort(key=self._step_key_function)
 
 
@@ -167,23 +167,23 @@ class DBEngine(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def insert(self, table: str, obj_data: dict[str, Any]):
+    def insert(self, table: str, obj_data: dict[str, Any]) -> int | None:
         pass
 
     @abc.abstractmethod
-    def migrate(self, table: str, columns: list[SQLColumn]):
+    def migrate(self, table: str, columns: list[SQLColumn]) -> None:
         pass
 
     @abc.abstractmethod
-    def update(self, table: str, obj_data: dict[str, Any], primary_key: str):
+    def update(self, table: str, obj_data: dict[str, Any], primary_key: str) -> None:
         pass
 
     @abc.abstractmethod
-    def delete(self, table: str, key: str, value: Any):
+    def delete(self, table: str, key: str, value: Any) -> None:
         pass
 
     @abc.abstractmethod
-    def execute_migration(self, migration: Migration, force: bool = False):
+    def execute_migration(self, migration: Migration, force: bool = False) -> None:
         pass
 
 
@@ -193,17 +193,17 @@ class UnboundEngine(DBEngine):
     ) -> list[Any]:
         raise NoBindError()
 
-    def insert(self, table: str, obj_data: dict[str, Any]):
+    def insert(self, table: str, obj_data: dict[str, Any]) -> int | None:
         raise NoBindError()
 
-    def migrate(self, table: str, columns: list[SQLColumn]):
+    def migrate(self, table: str, columns: list[SQLColumn]) -> None:
         raise NoBindError()
 
-    def update(self, table: str, obj_data: dict[str, Any], primary_key: str):
+    def update(self, table: str, obj_data: dict[str, Any], primary_key: str) -> None:
         raise NoBindError()
 
-    def delete(self, table: str, key: str, value: Any):
+    def delete(self, table: str, key: str, value: Any) -> None:
         raise NoBindError()
 
-    def execute_migration(self, migration: Migration, force: bool = False):
+    def execute_migration(self, migration: Migration, force: bool = False) -> None:
         raise NoBindError()

@@ -17,7 +17,7 @@ class SqliteEngine(DBEngine):
         self.conn = conn
         self.cursor = conn.cursor()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.conn.close()
 
     def _represent_bytes(self, data: bytes) -> str:
@@ -74,7 +74,7 @@ class SqliteEngine(DBEngine):
 
         return types[str_type]
 
-    def _create_table(self, tablename: str, standard_cols: list[SQLColumn]):
+    def _create_table(self, tablename: str, standard_cols: list[SQLColumn]) -> None:
         sqlite_cols = []
         for column in standard_cols:
             lite_col = (
@@ -109,12 +109,12 @@ class SqliteEngine(DBEngine):
 
         self.conn.commit()
 
-    def _drop_table(self, table: str):
+    def _drop_table(self, table: str) -> None:
         query = f"DROP TABLE IF EXISTS {table}"
         self.cursor.execute(query)
         self.conn.commit()
 
-    def _rename_table(self, old_table: str, new_table: str):
+    def _rename_table(self, old_table: str, new_table: str) -> None:
         query = f"ALTER TABLE {old_table} RENAME TO {new_table}"
         self.cursor.execute(query)
         self.conn.commit()
@@ -168,7 +168,7 @@ class SqliteEngine(DBEngine):
         migration: Migration,
         force: bool = False,
         _current_cols: list[SQLColumn] | None = None,
-    ):
+    ) -> None:
         me = MigrationEngine()
 
         if len(migration.steps) < 1:
@@ -212,7 +212,7 @@ class SqliteEngine(DBEngine):
         self._drop_table(migration.table)
         self._rename_table(temp_table, migration.table)
 
-    def _migrate_from(self, table: str, new_columns: list[SQLColumn]):
+    def _migrate_from(self, table: str, new_columns: list[SQLColumn]) -> None:
         for col in new_columns:
             if col.datatype == "bytes" and col.default is not None:
                 col.default = self._represent_bytes(col.default)
@@ -225,7 +225,7 @@ class SqliteEngine(DBEngine):
         if len(migration.steps) > 0:
             self.execute_migration(migration)
 
-    def migrate(self, table: str, columns: list[SQLColumn]):
+    def migrate(self, table: str, columns: list[SQLColumn]) -> None:
         matched_tables = self.cursor.execute(
             f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table}';"
         ).fetchall()
@@ -236,7 +236,7 @@ class SqliteEngine(DBEngine):
         else:
             return self._migrate_from(table, columns)
 
-    def update(self, table: str, obj_data: dict[str, Any], primary_key: str):
+    def update(self, table: str, obj_data: dict[str, Any], primary_key: str) -> None:
         cols = [col for col, val in obj_data.items() if val is not None]
         vals = [val for val in obj_data.values() if val is not None]
 
@@ -251,7 +251,7 @@ class SqliteEngine(DBEngine):
         self.cursor.execute(query, tuple(vals))
         self.conn.commit()
 
-    def delete(self, table: str, key: str, value: Any):
+    def delete(self, table: str, key: str, value: Any) -> None:
         query = f"DELETE FROM {table} WHERE {key} = ?"
         self.cursor.execute(query, (value,))
         self.conn.commit()

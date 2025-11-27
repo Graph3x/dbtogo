@@ -84,14 +84,14 @@ class MigrationEngine:
 
         return result
 
-    def get_renamed_mapping(self, migration: Migration):
+    def get_renamed_mapping(self, migration: Migration) -> dict[str, str]:
         mapping = {}
         for step in migration.steps:
             if type(step) is RenameCol:
                 mapping[step.old_name] = step.new_name
         return mapping
 
-    def _execute_step(self, new_cols: dict[str, SQLColumn], step: MigrationStep):
+    def _execute_step(self, new_cols: dict[str, SQLColumn], step: MigrationStep) -> None:
         if type(step) is AddCol:
             new_cols[step.column.name] = step.column
 
