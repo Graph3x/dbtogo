@@ -1,15 +1,13 @@
 import sqlite3
-from collections.abc import Callable
 from typing import Any, Self
 
 from pydantic import BaseModel
+from pydantic.fields import ModelPrivateAttr
 
-from dbtogo.datatypes import DBEngine, SQLColumn, UnboundEngine
+from dbtogo.datatypes import DBEngine, UnboundEngine
 from dbtogo.exceptions import BindViolationError, NoBindError, UnboundDeleteError
 from dbtogo.serialization import GeneralSQLSerializer
 from dbtogo.sqlite import SqliteEngine
-
-DEFAULT_PRIM_KEYS = ["id", "primary_key", "uuid"]
 
 
 class DBEngineFactory:
@@ -17,16 +15,6 @@ class DBEngineFactory:
     def create_sqlite3_engine(database: str = "") -> DBEngine:
         conn = sqlite3.connect(database)
         return SqliteEngine(conn)
-
-
-def bound(func: Callable) -> Callable:
-    def wrapper(cls: "DBModel", *args: tuple, **kwargs: dict[str, Any]) -> Any:
-        if cls._db is None:
-            raise NoBindError()
-
-        return func(cls, *args, **kwargs)
-
-    return wrapper
 
 
 class DBModel(BaseModel):
@@ -49,19 +37,24 @@ class DBModel(BaseModel):
             cls.__name__, cls.model_json_schema(), primary_key, unique
         )
 
-        used_names = [x.name for x in columns]
         if primary_key is None:
-            for prim in DEFAULT_PRIM_KEYS:
-                if prim in used_names:
-                    continue
-                primary_key = prim
-                columns.append(SQLColumn(prim, "int", False, None, True, True))
+            raise NotImplementedError("Auto primary key is not implemented yet.")
 
         assert primary_key is not None
 
         cls._primary = primary_key
         cls._table = table
         db.migrate(table, columns)
+
+    @classmethod
+    def _is_bound(cls) -> bool:
+        if isinstance(cls._db, UnboundEngine):
+            raise NoBindError()
+
+        if isinstance(cls._db, ModelPrivateAttr):
+            raise NoBindError()
+
+        return True
 
     @classmethod
     def _deserialize_object(cls, object_data: tuple) -> Self:
@@ -73,8 +66,9 @@ class DBModel(BaseModel):
         return py_object
 
     @classmethod
-    @bound
     def get(cls, **kwargs: dict[str, Any]) -> Self | None:
+        assert cls._is_bound()
+
         data = cls._db.select("*", cls._table, kwargs)
 
         if len(data) < 1:
@@ -84,32 +78,37 @@ class DBModel(BaseModel):
 
     def _create(self) -> None:
         obj_data = GeneralSQLSerializer().serialize_object(self)
-
         insert_bind = self._db.insert(self.__class__._table, obj_data)
-        bind_attr = getattr(self, self.__class__._primary)
 
-        data_bind = bind_attr if bind_attr is not None else insert_bind
-        self._data_bind = data_bind
+        if getattr(self, self.__class__._primary) is None:
+            setattr(self, self.__class__._primary, insert_bind)
+
+        self._data_bind = getattr(self, self.__class__._primary)
 
     def _update(self) -> None:
         bind = self._data_bind
-
         if getattr(self, self.__class__._primary) != bind:
             raise BindViolationError()
 
         obj_data = GeneralSQLSerializer().serialize_object(self)
         self._db.update(self.__class__._table, obj_data, self.__class__._primary)
 
-    @bound
     def save(self) -> None:
+        assert self.__class__._is_bound()
+
         if getattr(self, "_data_bind", None) is None:
             return self._create()
         return self._update()
 
-    @bound
     def delete(self) -> None:
+        assert self.__class__._is_bound()
+
         if getattr(self, "_data_bind", None) is None:
             raise UnboundDeleteError()
+
+        bind = self._data_bind
+        if getattr(self, self.__class__._primary) != bind:
+            raise BindViolationError()
 
         primary_key = self.__class__._primary
         primary_value = self._data_bind
@@ -118,7 +117,8 @@ class DBModel(BaseModel):
         self._data_bind = None
 
     @classmethod
-    @bound
     def all(cls) -> list[Self]:
+        assert cls._is_bound()
+
         data = cls._db.select("*", cls._table)
         return [cls._deserialize_object(x) for x in data]

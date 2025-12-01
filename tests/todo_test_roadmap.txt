@@ -1,8 +1,3 @@
-DBModel.bind
-DBModel.get
-DBModel.save
-DBModel.delete
-
 MigrationEngine.generate_migration
 MigrationEngine.get_renamed_mapping
 MigrationEngine.get_migrated_cols
