@@ -17,33 +17,10 @@ class DBEngineFactory:
         return SqliteEngine(conn)
 
 
-class ObjectCache:
-    def __init__(self):
-        self._identity_map: dict[Any: Any] = {}
-
-    def ensure_exists(self, obj: "DBModel") -> None:
-        if getattr(obj, "_data_bind", None) is None:
-            obj._create()
-        else:
-            obj._update()
-
-        self._identity_map[obj._data_bind] = obj
-
-    def get(self, pk):
-        pass
-
-    def invalidate(self, pk):
-        pass
-
-    def __str__(self) -> str:
-        return str(self._identity_map)
-
-
 class DBModel(BaseModel):
     _db: DBEngine = UnboundEngine()
     _table: str = "table_not_set"
     _primary: str = "primary_not_set"
-    _cache = ObjectCache()
 
     @classmethod
     def bind(
@@ -55,7 +32,6 @@ class DBModel(BaseModel):
     ) -> None:
         cls._db = db
         table = table if table is not None else cls.__name__
-        cls._cache = ObjectCache()
 
         columns = GeneralSQLSerializer().serialize_schema(
             cls.__name__, cls.model_json_schema(), primary_key, unique
@@ -119,7 +95,11 @@ class DBModel(BaseModel):
 
     def save(self) -> None:
         assert self.__class__._is_bound()
-        return self.__class__._cache.ensure_exists(self)
+
+        if getattr(self, "_data_bind", None) is None:
+            return self._create()
+
+        return self._update()
 
     def delete(self) -> None:
         assert self.__class__._is_bound()
