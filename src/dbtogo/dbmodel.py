@@ -60,6 +60,29 @@ class IdentityCache[T: "DBModel", K]:
         return str(self._cache)
 
 
+class LazyQueryList[T: "DBModel"]:
+    def __init__(self, cls: type[T], objects_data: list[Any]):
+        self._objects_data = objects_data
+        self._cls = cls
+
+    def __len__(self) -> int:
+        return len(self._objects_data)
+
+    def __getitem__(self, position: int) -> T:
+        gss = GeneralSQLSerializer()
+
+        current_data = self._objects_data[position]
+
+        new_object_values = gss.partially_deserialize_object(self._cls, current_data)
+        pk_value = new_object_values[self._cls._primary]
+
+        cached_obj = self._cls._cache.get(pk_value)
+        if cached_obj is not None:
+            return cached_obj
+
+        return gss.build_object(self._cls, new_object_values)
+
+
 class DBModel(BaseModel):
     _db: DBEngine = UnboundEngine()
     _table: str = "table_not_set"
@@ -128,7 +151,13 @@ class DBModel(BaseModel):
         return gss.build_object(cls, new_object_values)
 
     def __del__(self) -> None:
-        return
+        pk = self.__class__._primary
+        pk_value = getattr(self, pk)
+
+        if self._cache.get(pk_value) is None:
+            return
+
+        self.__class__._cache.remove(pk_value)
 
     def __setattr__(self, name: str, value: Any) -> None:
         cls = self.__class__
@@ -185,9 +214,9 @@ class DBModel(BaseModel):
         self.__class__._cache.remove(pk_value)
 
     @classmethod
-    def all(cls) -> list[Self]:
+    def all(cls) -> LazyQueryList[Self]:
         if not cls._is_bound():
             raise NoBindError()
 
         data = cls._db.select("*", cls._table)
-        return [cls._deserialize_object(x) for x in data]
+        return LazyQueryList(cls, data)

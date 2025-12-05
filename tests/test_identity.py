@@ -10,7 +10,7 @@ class SimpleDuck(DBModel):
         super().bind(engine, "pk", table="test_identity")
 
 
-def dont_test_identity():
+def test_identity():
     engine = DBEngineFactory.create_sqlite3_engine("test.db")
 
     SimpleDuck.bind(engine)
@@ -19,26 +19,27 @@ def dont_test_identity():
 
     duck2 = SimpleDuck.get(name="Duck")
 
-    print(duck is duck2)
-
-    print(SimpleDuck._cache)
+    assert duck is duck2
 
     duck.pk = 67
 
-    print(SimpleDuck._cache)
-
     duck3 = SimpleDuck.get(name="Duck")
-    print(duck is duck3)
+    assert duck is duck3
 
     duck.save()
-    duck4 = SimpleDuck.get(name="Duck")
-    print(duck is duck4)
 
-    print(SimpleDuck.all())
+    duck4 = SimpleDuck.get(name="Duck")
+    assert duck is duck4
+
+    ducks = SimpleDuck.all()
+
+    assert len(ducks) == 1
+    assert ducks[0] is duck
 
     duck.delete()
 
-    print(SimpleDuck.all())
+    assert len(SimpleDuck.all()) == 0
 
 
-dont_test_identity()
+if __name__ == "__main__":
+    test_identity()
