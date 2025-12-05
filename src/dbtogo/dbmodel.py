@@ -17,11 +17,32 @@ class DBEngineFactory:
         return SqliteEngine(conn)
 
 
+class IdentityCache:
+    def __init__(self) -> None:
+        self._cache: dict = {}
+        self._soft_keys: dict = {}
+
+    def get(self, key) -> Any:
+        if key is None:
+            return None
+
+        return self._cache.get(key, None)
+
+    def set(self, key, value) -> None:
+        self._cache[key] = value
+
+    def remove(self, key) -> None:
+        self._cache.pop(key)
+
+    def __str__(self) -> str:
+        return str(self._cache)
+
+
 class DBModel(BaseModel):
     _db: DBEngine = UnboundEngine()
     _table: str = "table_not_set"
     _primary: str = "primary_not_set"
-    _cache: dict = {}
+    _cache: IdentityCache = IdentityCache()
 
     @classmethod
     def bind(
@@ -32,7 +53,7 @@ class DBModel(BaseModel):
         table: str | None = None,
     ) -> None:
         cls._db = db
-        cls._cache = {}
+        cls._cache = IdentityCache()
 
         table = table if table is not None else cls.__name__
 
@@ -52,10 +73,10 @@ class DBModel(BaseModel):
     @classmethod
     def _is_bound(cls) -> bool:
         if isinstance(cls._db, UnboundEngine):
-            raise NoBindError()
+            return False
 
         if isinstance(cls._db, ModelPrivateAttr):
-            raise NoBindError()
+            return False
 
         return True
 
@@ -66,7 +87,8 @@ class DBModel(BaseModel):
 
     @classmethod
     def get(cls, **kwargs: dict[str, Any]) -> Self | None:
-        assert cls._is_bound()
+        if not cls._is_bound():
+            raise NoBindError()
 
         data = cls._db.select("*", cls._table, kwargs)
         if len(data) < 1:
@@ -77,11 +99,35 @@ class DBModel(BaseModel):
         new_object_values = gss.partially_deserialize_object(cls, data[0])
         pk_value = new_object_values[cls._primary]
 
-        cached_obj = cls._cache.get(pk_value, None)
+        cached_obj = cls._cache.get(pk_value)
         if cached_obj is not None:
             return cached_obj
 
         return gss.build_object(cls, new_object_values)
+
+    def __del__(self) -> None:
+        return
+        if not self.__class__._is_bound():
+            return
+
+        pk_value = getattr(self, self.__class__._primary)
+
+        if pk_value is None or self._cache.get(pk_value) is None:
+            return
+
+        self.__class__._cache.pop(pk_value)
+
+    def __setattr__(self, name, value):
+        cls = self.__class__
+        if cls._primary == name:
+            old_pk_val = getattr(self, cls._primary)
+            if old_pk_val is None:
+                return super().__setattr__(name, value)
+
+            # cls._cache.pop(old_pk_val)
+            cls._cache.set(value, self)
+
+        return super().__setattr__(name, value)
 
     def _create(self) -> None:
         obj_data = GeneralSQLSerializer().serialize_object(self)
@@ -92,34 +138,39 @@ class DBModel(BaseModel):
         if getattr(self, pk) is None:
             setattr(self, pk, insert_bind)
 
-        self.__class__._cache[getattr(self, pk)] = self
+        self.__class__._cache.set(getattr(self, pk), self)
 
     def _update(self) -> None:
         obj_data = GeneralSQLSerializer().serialize_object(self)
         self._db.update(self.__class__._table, obj_data, self.__class__._primary)
 
     def save(self) -> None:
-        assert self.__class__._is_bound()
+        if not self.__class__._is_bound():
+            raise NoBindError()
 
         pk_value = getattr(self, self.__class__._primary, None)
-        if pk_value is None or self.__class__._cache.get(pk_value, None) is None:
+        if self.__class__._cache.get(pk_value) is None:
             return self._create()
 
+        print("A ", pk_value)
         return self._update()
 
     def delete(self) -> None:
-        assert self.__class__._is_bound()
+        if not self.__class__._is_bound():
+            raise NoBindError()
 
         pk_value = getattr(self, self.__class__._primary)
 
-        if pk_value is None or self._cache.get(pk_value, None) is None:
+        if self._cache.get(pk_value) is None:
             raise UnboundDeleteError()
 
         self._db.delete(self.__class__._table, self.__class__._primary, pk_value)
+        self.__class__._cache.remove(pk_value)
 
     @classmethod
     def all(cls) -> list[Self]:
-        assert cls._is_bound()
+        if not cls._is_bound():
+            raise NoBindError()
 
         data = cls._db.select("*", cls._table)
         return [cls._deserialize_object(x) for x in data]

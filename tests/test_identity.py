@@ -20,9 +20,12 @@ def dont_test_identity():
     duck2 = SimpleDuck.get(name="Duck")
 
     print(duck is duck2)
-    print(duck.pk == duck2.pk)
+
+    print(SimpleDuck._cache)
 
     duck.pk = 67
+
+    print(SimpleDuck._cache)
 
     duck3 = SimpleDuck.get(name="Duck")
     print(duck is duck3)
@@ -30,6 +33,8 @@ def dont_test_identity():
     duck.save()
     duck4 = SimpleDuck.get(name="Duck")
     print(duck is duck4)
+
+    print(SimpleDuck.all())
 
     duck.delete()
 

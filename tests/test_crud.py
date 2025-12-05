@@ -62,10 +62,7 @@ def test_crud():
 
     db_duck = CryptoDuck.get(name="McDuck")
 
-    assert db_duck is not None
-    assert db_duck.name == "McDuck"
-    assert db_duck.bitcoin_wallet is None
-    assert db_duck.cash == 0
+    assert db_duck is duck
 
     assert len(CryptoDuck.all()) == 1
 
