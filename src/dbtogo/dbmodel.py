@@ -17,12 +17,12 @@ class DBEngineFactory:
         return SqliteEngine(conn)
 
 
-class IdentityCache:
+class IdentityCache[T: "DBModel", K]:
     def __init__(self) -> None:
-        self._cache: dict = {}
-        self._soft_keys: dict = {}
+        self._cache: dict[K, T] = {}
+        self._soft_keys: dict[K, K] = {}
 
-    def get(self, key) -> Any:
+    def get(self, key: K) -> T | None:
         if key is None:
             return None
 
@@ -37,19 +37,19 @@ class IdentityCache:
         ret_val = self._cache.get(hard_key, None)
         return ret_val
 
-    def set(self, key, value) -> None:
+    def set(self, key: K, value: T) -> None:
         self._cache[key] = value
 
-    def set_soft(self, hard_key, soft_key):
+    def set_soft(self, hard_key: K, soft_key: K) -> None:
         if hard_key in self._soft_keys.keys():
             self._soft_keys[soft_key] = self._soft_keys.pop(hard_key)
             return
         self._soft_keys[soft_key] = hard_key
 
-    def get_hard(self, key):
+    def get_hard(self, key: K) -> K:
         return self._soft_keys.get(key, key)
 
-    def remove(self, key) -> None:
+    def remove(self, key: K) -> None:
         hard_key = self.get_hard(key)
         if hard_key != key:
             self._soft_keys.pop(key)
@@ -64,7 +64,7 @@ class DBModel(BaseModel):
     _db: DBEngine = UnboundEngine()
     _table: str = "table_not_set"
     _primary: str = "primary_not_set"
-    _cache: IdentityCache = IdentityCache()
+    _cache = IdentityCache[Self, Any]()
 
     @classmethod
     def bind(
@@ -75,7 +75,7 @@ class DBModel(BaseModel):
         table: str | None = None,
     ) -> None:
         cls._db = db
-        cls._cache = IdentityCache()
+        cls._cache = IdentityCache[Self, Any]()
 
         table = table if table is not None else cls.__name__
 
@@ -129,17 +129,8 @@ class DBModel(BaseModel):
 
     def __del__(self) -> None:
         return
-        if not self.__class__._is_bound():
-            return
 
-        pk_value = getattr(self, self.__class__._primary)
-
-        if pk_value is None or self._cache.get(pk_value) is None:
-            return
-
-        self.__class__._cache.pop(pk_value)
-
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         cls = self.__class__
         if cls._primary == name:
             old_pk_val = getattr(self, cls._primary)
